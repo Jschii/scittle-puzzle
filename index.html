@@ -1,0 +1,65 @@
+<html>
+
+<head>
+    <script src="https://borkdude.github.io/scittle/js/scittle.js" type="application/javascript"></script>
+    <script type="application/x-scittle">
+(def canvas (.getElementById js/document "canvas"))
+(def context (.getContext canvas "2d"))
+(def row-size 3)
+(def piece-size 100)
+(def corner-radius 20)
+(def pieces (atom [8 7 6 5 4 3 2 1 0]))
+
+(defn- draw-board []
+  (.clearRect context 0 0 (.-width canvas) (.-height canvas))
+  (doall
+    (map-indexed (fn [index item]
+    (when-not (zero? item)
+        (let [x (* (mod index row-size) piece-size)
+              y (* (int (/ index row-size)) piece-size)
+              sx (+ x (/ corner-radius 2))
+              sy (+ y (/ corner-radius 2))
+              sw (- piece-size corner-radius)
+              sh (- piece-size corner-radius)]
+        (set! (.-fillStyle context) "#333")
+        (set! (.-lineJoin context) "round")
+        (set! (.-lineWidth context) corner-radius)
+        (.strokeRect context sx sy sw sh)
+        (.fillRect context sx sy sw sh)
+        (set! (.-fillStyle context) "#ee1")
+        (set! (.-font context) "50pt Calibri")
+        (set! (.-textAlign context) "center")
+        (set! (.-textBaseline context) "middle")
+        (.fillText context (str item) (+ x (/ piece-size 2)) (+ y (/ piece-size 2)))
+    ))) @pieces)))
+
+(defn main []
+  (draw-board)
+  (.addEventListener canvas "click"
+    (fn [event]
+      (let [x (.-layerX event)
+            y (.-layerY event)
+            x-index (int (/ x piece-size))
+            y-index (int (/ y piece-size))
+            index (+ x-index (* y-index row-size))
+            item (nth @pieces index 0)]
+            (when-not (zero? item)
+              (let [index-of-zero (.indexOf @pieces 0)]
+                (when (or
+                  (= (inc index) index-of-zero)
+                  (= (dec index) index-of-zero)
+                  (= (+ index row-size) index-of-zero)
+                  (= (- index row-size) index-of-zero))
+                  (reset! pieces (assoc @pieces index-of-zero item index 0))
+                  (draw-board))))))))
+
+  ;; export function to use from JavaScript:
+  (set! (.-main js/window) main)
+</script>
+</head>
+
+<body onload="main()">
+    <canvas id="canvas" width="300" height="300"></canvas>
+</body>
+
+</html>
